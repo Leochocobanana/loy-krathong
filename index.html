@@ -106,6 +106,23 @@ h2{font-size:clamp(24px,4vw,32px)}
 .wish p{margin:4px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
 .snd{position:fixed;top:12px;right:12px;z-index:9;width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.35);display:grid;place-items:center;backdrop-filter:blur(4px)}
 .snd svg{width:22px;height:22px;fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.fairbox{position:relative;height:clamp(320px,60vh,540px);border-radius:24px;overflow:hidden;background:#151233;touch-action:none;cursor:pointer}
+#fair{position:absolute;inset:0;width:100%;height:100%}
+.fctl{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px}
+.arw{width:60px;height:60px;border-radius:50%;background:var(--card);border:2px solid var(--line);display:grid;place-items:center;flex:none;user-select:none;-webkit-user-select:none;touch-action:none}
+.arw:active{background:rgba(255,207,110,.25)}
+.arw svg{width:28px;height:28px;fill:none;stroke:var(--ink);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.fmid{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;flex:1}
+.fmid .btn{font-size:16px;padding:0 18px}
+.toast{position:absolute;left:50%;top:14px;transform:translateX(-50%);background:rgba(255,243,230,.95);color:#5a3a2a;padding:6px 16px;border-radius:999px;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+.toast.on{opacity:1}
+.fhint{position:absolute;left:12px;bottom:10px;font-size:13px;color:var(--mute);background:rgba(0,0,0,.4);padding:4px 10px;border-radius:999px;pointer-events:none}
+.lg{transform-box:fill-box;transform-origin:50% 0}
+.walk .lg.a{animation:la .34s ease-in-out infinite alternate}.walk .lg.b{animation:lb .34s ease-in-out infinite alternate}
+@keyframes la{from{transform:rotate(-22deg)}to{transform:rotate(22deg)}}@keyframes lb{from{transform:rotate(22deg)}to{transform:rotate(-22deg)}}
+.sway{transform-box:fill-box;transform-origin:50% 100%;animation:sw 2.4s ease-in-out infinite alternate}@keyframes sw{from{transform:rotate(-6deg)}to{transform:rotate(6deg)}}
+.spin{transform-box:fill-box;transform-origin:center;animation:spn 1.2s linear infinite}@keyframes spn{to{transform:rotate(360deg)}}
+.bulb{animation:tw 1.6s ease-in-out infinite alternate}
 @media (prefers-reduced-motion:reduce){.flame,.ripple,.tw,.smoke,.hint,.glow{animation:none}}
 </style>
 </head>
@@ -129,6 +146,17 @@ h2{font-size:clamp(24px,4vw,32px)}
     <button id="pick-myn" data-role="myn"><span id="cv-myn"></span><b>Myn</b><small id="tk-myn"></small></button>
   </div>
   <span class="status"><span class="dot" id="cdot"></span><span id="ctext">กำลังเชื่อมต่อ…</span></span>
+</div></section>
+
+<section class="scr" id="s-fair"><div class="wrap">
+  <div class="bar"><h2>เดินงานลอยกระทง</h2><div class="pair" id="pair0"></div></div>
+  <div class="fairbox" id="fairbox"><svg id="fair" viewBox="0 0 800 420" preserveAspectRatio="none"></svg><div class="toast" id="toast"></div><div class="fhint" id="fhint">แตะที่พื้นเพื่อเดิน หรือกดลูกศร</div></div>
+  <div class="fctl">
+    <button class="arw" id="goL" aria-label="เดินไปทางซ้าย"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <div class="fmid"><button class="btn" id="fAct" disabled>เดินไปที่ร้านได้เลย</button><button class="btn pink" id="fHeart" hidden>ส่งหัวใจ</button></div>
+    <button class="arw" id="goR" aria-label="เดินไปทางขวา"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+  </div>
+  <div class="wait" id="wf" style="text-align:center;margin-top:10px"></div>
 </div></section>
 
 <section class="scr" id="s-decor"><div class="wrap">
@@ -235,7 +263,7 @@ let D=san(DEF),dts=0,role=null,round=0,done=-1,lit=false,wish='',solo=false,phas
 const P=()=>peers.find(s=>s&&(s.role==='leo'||s.role==='myn')&&s.role!==role)||null;
 const other=()=>role==='leo'?'myn':'leo';
 let mq=null,mqTB='';const mp={};
-function pub(){const st={role,round,done,lit,wish,design:D,dts,t:Date.now()};if(room){try{room.presence(st)}catch(e){}}if(mq&&role){try{mq.publish(mqTB+role,JSON.stringify(st),{retain:true})}catch(e){}}}
+function pub(){const st={role,round,done,lit,wish,design:D,dts,t:Date.now(),x:Math.round(myX),face,hand,bal,hug,fg};if(room){try{room.presence(st)}catch(e){}}if(mq&&role){try{mq.publish(mqTB+role,JSON.stringify(st),{retain:true})}catch(e){}}}
 
 function pairHTML(){
   const p=P(),me=role,ot=other();
@@ -246,7 +274,7 @@ function status(){
   $('#cdot').className='dot '+(conn==='on'?'on':'');
   $('#ctext').textContent=conn==='wait'?'กำลังเชื่อมต่อ…':conn==='off'?'เชื่อมต่อห้องไม่ได้ เล่นคนเดียวได้นะ':peers.length?'แฟนเข้ามาแล้ว':'เชื่อมต่อแล้ว ส่งลิงก์นี้ให้แฟนเปิดได้เลย';
   ['leo','myn'].forEach(r=>{const taken=!role&&peers.some(s=>s&&s.role===r);$('#pick-'+r).disabled=taken;$('#tk-'+r).textContent=taken?'แฟนเลือกแล้ว':''});
-  if(role){$('#pair1').innerHTML=pairHTML();$('#pair2').innerHTML=pairHTML()}
+  if(role){$('#pair0').innerHTML=pairHTML();$('#pair1').innerHTML=pairHTML();$('#pair2').innerHTML=pairHTML()}
 }
 
 /* ---------- decorate UI ---------- */
@@ -284,27 +312,29 @@ function waits(){
   $('#okFloat').disabled=!lit||done>=2;
 }
 function go(ph){
-  phase=ph;
+  phase=ph;stopFair();
   document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));
   if(ph==='intro')$('#s-intro').classList.add('on');
+  if(ph==='fair'){$('#s-fair').classList.add('on');startFair()}
   if(ph==='decor'||ph==='wish'){$('#s-decor').classList.add('on');$('#wishM').classList.toggle('on',ph==='wish');renderDecor();if(ph==='wish'){$('#wishFor').textContent='คำอวยพรของ '+NAME[role]+' ใส่ลงไปในกระทงของเรา';setTimeout(()=>$('#wishTx').focus(),300)}}
   if(ph==='light'){$('#s-light').classList.add('on');renderLight()}
   if(ph==='river'){$('#s-river').classList.add('on');startRiver()}
   status();scrollTo(0,0);
 }
 function adv(){
+  if(phase==='fair'){const p=P();if(fg&&(solo||(p&&p.round===round&&(p.fg===true||p.done>=0))))go('decor');return}
   const s=STG[phase];if(s==null)return;
   const p=P(),ok=solo||(p&&p.round===round&&p.done>=s)||(p&&p.round===round&&p.done>=s);
   if(done>=s&&ok)go(['wish','light','river'][s]);else waits();
 }
 function renderLight(){$('#lprev').innerHTML=water()+`<g transform="translate(0 6)">${kr(D,lit,litFresh)}</g>`;litFresh=false;$('#hint').style.display=lit?'none':'';waits()}
-document.querySelectorAll('.who button').forEach(b=>b.addEventListener('click',()=>{audioInit();role=b.dataset.role;if(!dts)dts=1;pub();go('decor')}));
+document.querySelectorAll('.who button').forEach(b=>b.addEventListener('click',()=>{audioInit();role=b.dataset.role;myX=tx=role==='myn'?200:140;px=myX+60;pub();go('fair')}));
 $('#okDecor').addEventListener('click',()=>{done=0;pub();adv()});
 $('#okWish').addEventListener('click',()=>{wish=$('#wishTx').value.trim().slice(0,200);done=1;pub();adv()});
 $('#lightStage').addEventListener('click',()=>{if(lit)return;audioInit();chime();lit=true;litFresh=true;pub();renderLight()});
 $('#okFloat').addEventListener('click',()=>{done=2;pub();adv()});
-$('#again').addEventListener('click',()=>{round++;reset();pub();go('decor')});
-function reset(){done=-1;lit=false;wish='';pWish='';$('#wishTx').value='';D=san(DEF);dts=Date.now();tab=0;stopRiver()}
+$('#again').addEventListener('click',()=>{round++;reset();pub();go('fair')});
+function reset(){fg=false;hand='';bal=-1;pHugSeen=null;myX=tx=role==='myn'?200:140;done=-1;lit=false;wish='';pWish='';$('#wishTx').value='';D=san(DEF);dts=Date.now();tab=0;stopRiver()}
 
 function onPeers(list){
   const arr=Array.isArray(list)?list:Object.values(list||{});
@@ -315,7 +345,7 @@ function handle(list){
   const p=P();
   if(p&&role){
     const pr=ci(p.round,1e6,0);
-    if(pr>round){round=pr;reset();go('decor')}
+    if(pr>round){round=pr;reset();go('fair')}
     if(pr===round){
       if(+p.dts>dts&&done<0){D=san(p.design);dts=+p.dts;if(phase==='decor')renderDecor()}
       if(p.lit===true&&!lit){lit=true;litFresh=true;if(phase==='light')renderLight()}
@@ -382,6 +412,121 @@ function boom(px,big){if(!AC)return;const t=AC.currentTime,out=panTo(px*1.6-.8);
   const f=noise(t,1.6,'lowpass',1400,big?.9:.65,out,.004);f.frequency.setValueAtTime(1400,t);f.frequency.exponentialRampToValueAtTime(160,t+1.2);
   const o=tone(90,t,'sine',.8,.6,out,.004);o.frequency.setValueAtTime(90,t);o.frequency.exponentialRampToValueAtTime(35,t+.5);
   for(let i=0;i<14;i++)noise(t+.35+Math.random()*.9,.03,'highpass',4000,.1+Math.random()*.15,out)}
+
+/* ---------- fair ---------- */
+const FW=2650,GY=388;
+const STALLS=[{x:300,n:'ขนมครก',it:'kk',aw:['#f4a3b8','#fff3e6']},{x:640,n:'ข้าวมันไก่',it:'rice',aw:['#ffcf6e','#fff3e6']},{x:980,n:'ลูกชิ้นปิ้ง',it:'ball',aw:['#e8735a','#fff3e6']},{x:1320,n:'สายไหม',it:'cc',aw:['#c9b6ff','#fff3e6']},{x:1660,n:'ข้าวเหนียวมะม่วง',it:'mango',aw:['#9fd27a','#fff3e6']},{x:2000,n:'ร้านของเล่น',it:'toy',aw:['#7fb6f0','#fff3e6']},{x:2380,n:'ร้านกระทง',it:'kr',aw:['#6aa556','#f4e7b8']}];
+const HANDS=['kk','rice','ball','cc','mango','pin'],BALC=['#ff7a8a','#ffcf6e','#7fd0f0','#b99cf0'];
+const INAME={kk:'ขนมครก',rice:'ข้าวมันไก่',ball:'ลูกชิ้นปิ้ง',cc:'สายไหม',mango:'ข้าวเหนียวมะม่วง',pin:'กังหันลม'};
+let myX=140,face=1,hand='',bal=-1,hug=0,fg=false,tx=140,dir=0,fRaf=0,fLast=0,camX=0,VW=800,px=200,pFace=-1,pHugSeen=null,hearts=[],lastPubT=0,dirty=false,lastAct='',myKey='',pKey='',wk='',heartOn=null;
+function item(it){
+  if(it==='kk')return '<path d="M-14 0q14 10 28 0z" fill="#5f9e4f"/><circle cx="-8" cy="-1" r="4.5" fill="#fff3dc"/><circle cx="0" cy="-2" r="4.5" fill="#fff3dc"/><circle cx="8" cy="-1" r="4.5" fill="#fff3dc"/><circle cx="0" cy="-3" r="1.8" fill="#9fd27a"/>';
+  if(it==='rice')return '<ellipse cx="0" cy="0" rx="16" ry="5" fill="#fff"/><ellipse cx="-3" cy="-4" rx="9" ry="6" fill="#fdfbf2"/><path d="M2 -6h11v4H2z" fill="#f2b36b"/><circle cx="10" cy="1" r="2.5" fill="#8cc56f"/>';
+  if(it==='ball')return '<line x1="0" y1="6" x2="0" y2="-31" stroke="#d9b98a" stroke-width="2"/><circle cy="-8" r="5" fill="#9a5a34"/><circle cy="-17" r="5" fill="#a8653a"/><circle cy="-26" r="5" fill="#9a5a34"/>';
+  if(it==='cc')return '<line x1="0" y1="6" x2="0" y2="-18" stroke="#e9dcc0" stroke-width="2"/><circle cx="0" cy="-28" r="11" fill="#ffb3cf"/><circle cx="-8" cy="-22" r="8" fill="#ffc6da"/><circle cx="8" cy="-23" r="8" fill="#ff9fc2"/><circle cx="0" cy="-36" r="7" fill="#ffd2e2"/>';
+  if(it==='mango')return '<rect x="-14" y="-8" width="28" height="12" rx="3" fill="#fff8ec" stroke="#e6d6b8"/><ellipse cx="-5" cy="-9" rx="7" ry="4" fill="#fdfbf2"/><path d="M0 -8q8 -8 14 0z" fill="#ffc83d"/>';
+  if(it==='pin')return '<line x1="0" y1="6" x2="0" y2="-28" stroke="#e9dcc0" stroke-width="2"/><g transform="translate(0 -32)"><g class="spin"><path d="M0 0L0 -12L8 -8Z" fill="#ff7a8a"/><path d="M0 0L12 0L8 8Z" fill="#ffcf6e"/><path d="M0 0L0 12L-8 8Z" fill="#7fd0f0"/><path d="M0 0L-12 0L-8 -8Z" fill="#9fd27a"/></g><circle r="2" fill="#fff"/></g>';
+  return '';
+}
+function charFull(r,h,b){
+  const L=r==='leo',leg=L?'#2f3557':'#f6d2b5',sh='#4a3226';let o='';
+  if(b>=0)o+=`<g class="sway"><path d="M26 -44Q34 -100 30 -148" fill="none" stroke="#e8e2f0" stroke-width="1.2"/><ellipse cx="30" cy="-166" rx="17" ry="20" fill="${BALC[b]}"/><path d="M27 -147l3 4 3-4z" fill="${BALC[b]}"/><ellipse cx="24" cy="-174" rx="4" ry="6" fill="#fff" opacity=".45"/></g>`;
+  o+=`<g class="lg a"><rect x="-11" y="-32" width="9" height="30" rx="4" fill="${leg}"/><ellipse cx="-6" cy="-2" rx="7" ry="4" fill="${sh}"/></g><g class="lg b"><rect x="2" y="-32" width="9" height="30" rx="4" fill="${leg}"/><ellipse cx="7" cy="-2" rx="7" ry="4" fill="${sh}"/></g>`;
+  o+=`<g transform="translate(-42 -126) scale(.7)">${chara(r).replace(/<\/?svg[^>]*>/g,'')}</g>`;
+  if(!L)o+='<path d="M-19 -40L19 -40L26 -22L-26 -22Z" fill="#e7769a"/>';
+  if(h)o+=`<g transform="translate(26 -40)">${item(h)}<circle r="4.5" fill="#f6d2b5"/></g>`;
+  return o;
+}
+function tag(r){return `<g transform="translate(0 -138)"><rect x="-22" y="-12" width="44" height="20" rx="10" fill="rgba(0,0,0,.45)"/><text y="3" text-anchor="middle" font-size="12" font-family="Mali" fill="#fff">${NAME[r]}</text></g>`}
+function vendor(x,k){const hc=['#3b2a24','#5a3a2a','#2a2a2a'][k%3],sc=['#7fb6f0','#f4a3b8','#9fd27a','#ffcf6e'][k%4];return `<g transform="translate(${x+62} 0)"><rect x="-20" y="244" width="40" height="30" rx="12" fill="${sc}"/><circle cy="226" r="19" fill="#f2c9a8"/><path d="M-19 224a19 19 0 0 1 38 0q-10-8-19-6q-9-2-19 6z" fill="${hc}"/><circle cx="-6" cy="228" r="2.2" fill="#2b1d1a"/><circle cx="6" cy="228" r="2.2" fill="#2b1d1a"/><path d="M-4 235q4 3 8 0" fill="none" stroke="#a0524e" stroke-width="1.6" stroke-linecap="round"/></g>`}
+function goods(it,x){const g=x-40;let o='';
+  if(it==='kk'){o+=`<ellipse cx="${g}" cy="256" rx="42" ry="10" fill="#2a2626"/>`;for(let r=0;r<2;r++)for(let i=0;i<6;i++)o+=`<circle cx="${g-31+i*12+r*6}" cy="${252+r*5}" r="5" fill="#fff3dc"/><circle cx="${g-31+i*12+r*6}" cy="${251+r*5}" r="2" fill="#9fd27a"/>`}
+  if(it==='rice'){o+=`<rect x="${g-42}" y="222" width="34" height="36" rx="6" fill="#b9bfc8"/><ellipse cx="${g-25}" cy="222" rx="18" ry="5" fill="#d7dce2"/><path d="M${g-30} 214q-4-8 0-14M${g-20} 214q4-8 0-14" stroke="#fff" opacity=".5" fill="none" stroke-width="2"/>`;[g+6,g+32].forEach(a=>o+=`<g transform="translate(${a} 256)">${item('rice')}</g>`)}
+  if(it==='ball'){o+=`<rect x="${g-44}" y="244" width="88" height="14" rx="4" fill="#3a3030"/><rect x="${g-40}" y="246" width="80" height="4" fill="#ff8a3d" opacity=".8"/>`;for(let i=0;i<5;i++)o+=`<g transform="translate(${g-36+i*16} 250) rotate(75) scale(.8)">${item('ball')}</g>`}
+  if(it==='cc'){o+=`<rect x="${g-16}" y="228" width="32" height="30" rx="6" fill="#bfe3ff" opacity=".5"/>`;[-14,0,14].forEach(d=>o+=`<g transform="translate(${g+d} 238) rotate(${d})">${item('cc')}</g>`)}
+  if(it==='mango'){[[g-24,256],[g+8,256],[g-8,243]].forEach(([a,b])=>o+=`<g transform="translate(${a} ${b})">${item('mango')}</g>`);for(let i=0;i<4;i++)o+=`<ellipse cx="${g+36+i*3}" cy="${252-i*4}" rx="9" ry="6" fill="#ffc83d" stroke="#e0a21a"/>`}
+  if(it==='toy'){BALC.forEach((c,i)=>{const bx=g-30+i*20,by=192+(i%2)*14;o+=`<path d="M${g} 258Q${bx} 232 ${bx} ${by+15}" stroke="#ddd" fill="none"/><ellipse cx="${bx}" cy="${by}" rx="12" ry="15" fill="${c}"/>`});o+=`<g transform="translate(${g+40} 256)">${item('pin')}</g>`}
+  if(it==='kr'){[[g-32,.17],[g+4,.21],[g+40,.16]].forEach(([a,sc],i)=>o+=`<g transform="translate(${a} 260) scale(${sc}) translate(-150 -222)">${kr(san({tiers:i+1,pcol:[i,2,1,0],petal:[i%3,1,0,2],center:i,ring:[3,1]}),false)}</g>`)}
+  return o}
+function stall(st,k){const x=st.x,c1=st.aw[0],c2=st.aw[1];let o=`<rect x="${x-104}" y="146" width="208" height="124" fill="#2c2550"/><rect x="${x-108}" y="112" width="10" height="210" fill="#8a5a3c"/><rect x="${x+98}" y="112" width="10" height="210" fill="#8a5a3c"/>`;
+  for(let i=0;i<8;i++)o+=`<rect x="${(x-118+i*29.5).toFixed(1)}" y="108" width="29.6" height="34" fill="${i%2?c2:c1}"/><circle cx="${(x-103.25+i*29.5).toFixed(1)}" cy="142" r="14.75" fill="${i%2?c2:c1}"/>`;
+  [-60,0,60].forEach(d=>o+=`<line x1="${x+d}" y1="157" x2="${x+d}" y2="166" stroke="#1b1730" stroke-width="1.5"/><circle cx="${x+d}" cy="171" r="13" fill="url(#glowG)" class="bulb"/><circle cx="${x+d}" cy="170" r="4" fill="#fff1c2"/>`);
+  const fs=st.n.length>9?15:19;
+  o+=`<line x1="${x-50}" y1="104" x2="${x-50}" y2="110" stroke="#8a5a3c" stroke-width="3"/><line x1="${x+50}" y1="104" x2="${x+50}" y2="110" stroke="#8a5a3c" stroke-width="3"/><rect x="${x-80}" y="70" width="160" height="34" rx="12" fill="#fff3e6" stroke="${c1}" stroke-width="3"/><text x="${x}" y="93" text-anchor="middle" font-family="Mali" font-weight="700" font-size="${fs}" fill="#5a3a2a">${st.n}</text>`;
+  o+=vendor(x,k);
+  o+=`<rect x="${x-114}" y="258" width="228" height="64" rx="6" fill="#c98b5a"/><rect x="${x-114}" y="258" width="228" height="10" rx="4" fill="#e0a774"/>`;
+  for(let i=0;i<10;i++)o+=`<path d="M${x-114+i*22.8} 268h22.8l-11.4 16z" fill="${i%2?c2:c1}" opacity=".9"/>`;
+  return o+goods(st.it,x)}
+function buildFair(){
+  const rnd=n=>Math.floor(Math.random()*n);
+  let o=`<rect width="${FW}" height="420" fill="url(#skyG)"/>`;
+  for(let i=0;i<160;i++)o+=`<circle class="tw" style="animation-delay:${(Math.random()*2).toFixed(2)}s" cx="${rnd(FW)}" cy="${rnd(170)}" r="${(Math.random()*1.3+.4).toFixed(1)}" fill="#fff"/>`;
+  o+='<circle cx="520" cy="62" r="70" fill="url(#haloG)"/><circle cx="520" cy="62" r="26" fill="url(#moonG)"/>';
+  for(let x=0;x<FW;x+=140)o+=`<circle cx="${x+rnd(60)}" cy="${222+rnd(14)}" r="${40+rnd(20)}" fill="#1f1b3e"/>`;
+  [420,1300,2150].forEach(x=>{o+=`<g fill="#29234d"><rect x="${x-70}" y="200" width="140" height="40"/><rect x="${x-46}" y="178" width="92" height="24"/><path d="M${x-36} 178L${x} 96L${x+36} 178Z"/><rect x="${x-3}" y="66" width="6" height="32"/></g>`;for(let i=0;i<8;i++)o+=`<circle cx="${x-60+i*17}" cy="204" r="2" fill="#ffd27a" class="bulb" style="animation-delay:${i*.2}s"/>`});
+  o+=`<rect y="240" width="${FW}" height="80" fill="#1c1838"/><rect y="318" width="${FW}" height="102" fill="#3a3157"/><rect y="318" width="${FW}" height="7" fill="#4b4170"/>`;
+  for(let x=0;x<FW;x+=70)o+=`<path d="M${x} 330L${x-18} 420" stroke="#463c66" stroke-width="2"/>`;
+  STALLS.forEach((st,k)=>o+=stall(st,k));
+  const cols=['#ff7a8a','#ffcf6e','#7fd0f0','#9fd27a','#c9b6ff'];let n=0;
+  for(let x0=0;x0<FW;x0+=220){o+=`<path d="M${x0} 26Q${x0+110} 66 ${x0+220} 26" fill="none" stroke="#14112b" stroke-width="1.5"/>`;
+    [.12,.3,.5,.7,.88].forEach(t=>{const bx=x0+220*t,by=(1-t)*(1-t)*26+2*(1-t)*t*66+t*t*26,c=cols[n++%5];o+=`<circle cx="${bx.toFixed(1)}" cy="${(by+5).toFixed(1)}" r="11" fill="${c}" opacity=".22" class="bulb" style="animation-delay:${(n%7)*.23}s"/><circle cx="${bx.toFixed(1)}" cy="${(by+5).toFixed(1)}" r="4.5" fill="${c}"/>`});
+    if((x0/220)%2===1)o+=`<line x1="${x0+110}" y1="46" x2="${x0+110}" y2="58" stroke="#14112b"/><ellipse cx="${x0+110}" cy="72" rx="14" ry="16" fill="#e2483f"/><rect x="${x0+104}" y="54" width="12" height="4" fill="#ffcf6e"/><rect x="${x0+104}" y="86" width="12" height="4" fill="#ffcf6e"/><ellipse cx="${x0+110}" cy="72" rx="6" ry="14" fill="#ff8a6a" opacity=".5"/>`}
+  return o}
+function fitFair(){const b=$('#fairbox');if(!b.clientHeight)return;VW=Math.min(FW,b.clientWidth/b.clientHeight*420);$('#fair').setAttribute('viewBox',`0 0 ${VW.toFixed(1)} 420`)}
+addEventListener('resize',fitFair);
+function startFair(){
+  $('#fair').innerHTML=`<g id="world">${buildFair()}<g id="pcP"><g class="flip"></g>${tag(other())}</g><g id="pcM"><g class="flip"></g>${tag(role)}</g><g id="hearts"></g></g>`;
+  myKey=pKey=lastAct=wk='';heartOn=null;fitFair();fLast=performance.now();cancelAnimationFrame(fRaf);fRaf=requestAnimationFrame(fairStep);
+}
+function stopFair(){cancelAnimationFrame(fRaf);fRaf=0;dir=0}
+function setChar(sel,x,f,mv,now){const g=$(sel),fl=g.firstElementChild,bob=mv?-Math.abs(Math.sin(now/90))*3:0;g.setAttribute('transform',`translate(${x.toFixed(1)} ${(GY+bob).toFixed(1)})`);fl.setAttribute('transform',`scale(${f} 1)`);fl.classList.toggle('walk',mv)}
+function spawnHearts(){const m=(myX+px)/2;for(let i=0;i<8;i++)hearts.push({x:m+(Math.random()-.5)*70,y:GY-110-Math.random()*30,vy:-30-Math.random()*25,l:1.8,s:10+Math.random()*10})}
+function fairStep(now){
+  const dt=Math.min(.05,(now-fLast)/1000);fLast=now;
+  if(dir)tx=Math.max(40,Math.min(FW-40,myX+dir*60));
+  const d=tx-myX,mv=Math.abs(d)>1.5;
+  if(mv){myX+=Math.sign(d)*Math.min(Math.abs(d),230*dt);face=d>0?1:-1;dirty=true}
+  const p=P();let ptx,ph='',pb=-1,pf=null;
+  if(p){const nx=+p.x;ptx=isFinite(nx)?Math.max(0,Math.min(FW,nx)):px;ph=HANDS.includes(p.hand)?p.hand:'';pb=ci(p.bal,4,-1);pf=p.face===-1?-1:1}
+  else ptx=myX-face*60;
+  const pd=ptx-px,pm=Math.abs(pd)>1.5;
+  if(pm)px+=p?pd*Math.min(1,dt*6):Math.sign(pd)*Math.min(Math.abs(pd),230*dt);
+  pFace=pm?(pd>0?1:-1):(pf??pFace);
+  const mk=hand+'|'+bal,pk=ph+'|'+pb;
+  if(mk!==myKey){myKey=mk;$('#pcM .flip').innerHTML=charFull(role,hand,bal)}
+  if(pk!==pKey){pKey=pk;$('#pcP .flip').innerHTML=charFull(other(),ph,pb)}
+  setChar('#pcP',px,pFace,pm,now);setChar('#pcM',myX,face,mv,now);
+  camX=Math.max(0,Math.min(FW-VW,myX-VW/2));$('#world').setAttribute('transform',`translate(${(-camX).toFixed(1)} 0)`);
+  if(p){const h=ci(p.hug,1e6,0);if(pHugSeen==null)pHugSeen=h;else if(h>pHugSeen){pHugSeen=h;spawnHearts();heartSnd()}}
+  if(hearts.length||$('#hearts').childElementCount){hearts=hearts.filter(h=>(h.l-=dt)>0);hearts.forEach(h=>{h.y+=h.vy*dt;h.x+=Math.sin(h.y/12)*.6});
+    $('#hearts').innerHTML=hearts.map(h=>`<use href="#hrt" x="${(h.x-h.s/2).toFixed(1)}" y="${h.y.toFixed(1)}" width="${h.s.toFixed(1)}" height="${h.s.toFixed(1)}" fill="#f4a3b8" opacity="${Math.min(1,h.l).toFixed(2)}"/>`).join('')}
+  if(dirty&&now-lastPubT>220){lastPubT=now;dirty=false;pub()}
+  fairUI(p,ptx);
+  fRaf=requestAnimationFrame(fairStep);
+}
+function fairUI(p,ptx){
+  const st=STALLS.find(s=>Math.abs(s.x-myX)<115),n=NAME[other()],b=$('#fAct');let lab,dis=false;
+  if(st){if(st.it==='kr'){lab=fg?'รอ '+n+' อยู่นะ…':'ไปแต่งกระทงกัน';dis=fg}else lab=st.it==='toy'?(bal<0?'ซื้อลูกโป่ง':'ซื้อกังหันลม'):'ซื้อ'+st.n}
+  else{lab='เดินไปที่ร้านได้เลย';dis=true}
+  const key=lab+dis;if(key!==lastAct){lastAct=key;b.textContent=lab;b.disabled=dis;b.dataset.it=st?st.it:''}
+  const near=Math.abs(ptx-myX)<100;if(near!==heartOn){heartOn=near;$('#fHeart').hidden=!near}
+  const pf=!!(p&&p.round===round&&(p.fg===true||p.done>=0)),k=[fg,!!p,pf,solo].join();
+  if(k!==wk){wk=k;const el=$('#wf');el.innerHTML='';
+    if(fg&&!solo&&!pf){el.textContent=p?'รอ '+n+' เดินมาที่ร้านกระทงนะ ':n+' ยังไม่อยู่ในห้อง ';if(!p){const a=document.createElement('button');a.className='link';a.textContent='ไปต่อคนเดียว';a.onclick=()=>{solo=true;status();adv()};el.appendChild(a)}}
+    else if(!fg&&pf)el.textContent=n+' รออยู่ที่ร้านกระทงแล้ว เดินไปหาเลย';}
+}
+let tT=0;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('on'),1600)}
+function coin(){if(!AC)return;const t=AC.currentTime;tone(1318.5,t,'square',.06,.08,SFX);tone(1760,t+.08,'square',.06,.25,SFX)}
+function heartSnd(){if(!AC)return;const t=AC.currentTime;[6,8].forEach((n,i)=>tone(SC[n],t+i*.1,'triangle',.3,.7,SFX))}
+$('#fAct').addEventListener('click',()=>{const it=$('#fAct').dataset.it;if(!it)return;audioInit();
+  if(it==='kr'){fg=true;pub();lastAct='';adv();return}
+  let got;if(it==='toy'){if(bal<0){bal=Math.floor(Math.random()*4);got='ลูกโป่ง'}else{hand='pin';got='กังหันลม'}}else{hand=it;got=INAME[it]}
+  coin();toast('ได้'+got+'แล้ว');lastAct='';pub()});
+$('#fHeart').addEventListener('click',()=>{audioInit();hug++;spawnHearts();heartSnd();pub()});
+$('#fair').addEventListener('pointerdown',e=>{if(phase!=='fair')return;const r=e.currentTarget.getBoundingClientRect();tx=Math.max(40,Math.min(FW-40,camX+(e.clientX-r.left)/r.width*VW));$('#fhint').style.display='none'});
+[['#goL',-1],['#goR',1]].forEach(([id,v])=>{const b=$(id);b.addEventListener('pointerdown',e=>{e.preventDefault();dir=v;$('#fhint').style.display='none'});['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>{if(dir===v){dir=0;tx=myX}}))});
+addEventListener('keydown',e=>{if(phase!=='fair')return;if(e.key==='ArrowLeft')dir=-1;if(e.key==='ArrowRight')dir=1});
+addEventListener('keyup',e=>{if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&dir){dir=0;tx=myX}});
 
 /* ---------- river ---------- */
 let raf=0,fwP=[],others=[],ended=false;
